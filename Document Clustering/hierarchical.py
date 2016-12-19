@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from nltk.stem.snowball import SnowballStemmer
 from os import listdir
 from os.path import isfile, join
+from scipy.cluster.hierarchy import ward, dendrogram
 from sklearn import feature_extraction
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -10,6 +11,7 @@ from sklearn.cluster import KMeans
 from sklearn.externals import joblib
 
 import codecs
+import matplotlib.pyplot as plt
 import mpld3
 import numpy as np
 import nltk
@@ -86,35 +88,23 @@ tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000,
 tfidf_matrix = tfidf_vectorizer.fit_transform(fileContents)
 
 terms = tfidf_vectorizer.get_feature_names()
+dist = 1 - cosine_similarity(tfidf_matrix)
 
-# KMeans Clustering
+# Hierarchical Document Clustering
 
-num_clusters = 5
+linkage_matrix = ward(dist) #define the linkage_matrix using ward clustering pre-computed distances
 
-km = KMeans(n_clusters=num_clusters)
-km.fit(tfidf_matrix)
+fig, ax = plt.subplots(figsize=(15, 20)) # set size
+ax = dendrogram(linkage_matrix, orientation="right", labels=files);
 
-clusters = km.labels_.tolist()
+plt.tick_params(\
+    axis= 'x',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom='off',      # ticks along the bottom edge are off
+    top='off',         # ticks along the top edge are off
+    labelbottom='off')
 
-joblib.dump(km,  'doc_cluster.pkl')
-km = joblib.load('doc_cluster.pkl')
-clusters = km.labels_.tolist()
+plt.tight_layout() #show plot with tight layout
 
-documents = { 'doc_num': files, 'text': fileContents, 'cluster': clusters }
-
-frame = pd.DataFrame(documents, index = [clusters] , columns = ['doc_num', 'cluster'])
-
-print("Top terms per cluster:")
-print()
-order_centroids = km.cluster_centers_.argsort()[:, ::-1]
-for i in range(num_clusters):
-    print("Cluster %d words:" % i, end='')
-    for ind in order_centroids[i, :6]:
-        print(' %s' % vocab_frame.ix[terms[ind].split(' ')].values.tolist()[0][0], end=',')
-    print()
-    print()
-    print("Cluster %d document:" % i, end='')
-    for num in frame.ix[i]['doc_num'].values.tolist():
-        print(' %s,' % num, end='')
-    print()
-    print()
+#uncomment below to save figure
+plt.savefig('ward_clusters.png', dpi=300) #save figure as ward_clusters
