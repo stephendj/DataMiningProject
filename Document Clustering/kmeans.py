@@ -16,10 +16,11 @@ import nltk
 import os
 import pandas as pd
 import re
+import time
 
 stopwords = nltk.corpus.stopwords.words('english')
 stemmer = SnowballStemmer("english")
-dirPath = 'Dataset1TuBes'
+dirPath = 'Dataset'
 
 # functions
 
@@ -79,42 +80,42 @@ vocab_frame = pd.DataFrame({'words': totalvocab_tokenized}, index = totalvocab_s
 
 # TF IDF Vectorizer
 
-tfidf_vectorizer = TfidfVectorizer(max_df=0.8, max_features=200000,
-    min_df=0.15, stop_words='english',
-    use_idf=True, tokenizer=tokenize_and_stem, ngram_range=(1,3))
+tfidf_vectorizer = TfidfVectorizer(max_df = 0.8, max_features = 200000,
+    min_df = 0.15, stop_words = 'english',
+    use_idf = True, tokenizer = tokenize_and_stem, ngram_range = (1,3))
 
 tfidf_matrix = tfidf_vectorizer.fit_transform(fileContents)
 
 terms = tfidf_vectorizer.get_feature_names()
 
 # KMeans Clustering
+start_time = time.time()
 
-num_clusters = 5
-
+num_clusters = 4
 km = KMeans(n_clusters=num_clusters)
 km.fit(tfidf_matrix)
 
 clusters = km.labels_.tolist()
 
-joblib.dump(km,  'doc_cluster.pkl')
-km = joblib.load('doc_cluster.pkl')
+# joblib.dump(km,  'doc_cluster.pkl')
+# km = joblib.load('doc_cluster.pkl')
 clusters = km.labels_.tolist()
 
 documents = { 'doc_num': files, 'text': fileContents, 'cluster': clusters }
 
 frame = pd.DataFrame(documents, index = [clusters] , columns = ['doc_num', 'cluster'])
+end_time = time.time() - start_time
 
-print("Top terms per cluster:")
-print()
+f1 = open('kmeans result.txt', 'w')
+f1.write("Time collapsed: " + str(end_time) + "s\n")
+f1.write("Top terms per cluster:\n")
 order_centroids = km.cluster_centers_.argsort()[:, ::-1]
 for i in range(num_clusters):
-    print("Cluster %d words:" % i, end='')
-    for ind in order_centroids[i, :6]:
-        print(' %s' % vocab_frame.ix[terms[ind].split(' ')].values.tolist()[0][0], end=',')
-    print()
-    print()
-    print("Cluster %d document:" % i, end='')
+    f1.write("Cluster[" + str(i) + "] words:")
+    for ind in order_centroids[i, :11]:
+        f1.write(" " + vocab_frame.ix[terms[ind].split(' ')].values.tolist()[0][0],)
+    f1.write("\n")
+    f1.write("Cluster[" + str(i) + "] documents: ")
     for num in frame.ix[i]['doc_num'].values.tolist():
-        print(' %s,' % num, end='')
-    print()
-    print()
+        f1.write(" " + num)
+    f1.write("\n\n")

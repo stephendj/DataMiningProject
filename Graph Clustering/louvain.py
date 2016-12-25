@@ -1,11 +1,18 @@
-import community
-import networkx as nx
-import matplotlib.pyplot as plt
 from collections import defaultdict
 
-G = nx.read_edgelist("Data/Dataset 2.csv", delimiter = ";")
+import community
+import matplotlib.pyplot as plt
+import networkx as nx
+import time
 
+G = nx.read_edgelist("Dataset2.txt", delimiter = " ")
+
+start_time = time.time()
 partition = community.best_partition(G)
+end_time = time.time() - start_time
+
+f1 = open('Louvain Result Dataset2.txt', 'w')
+f1.write("Time collapsed: " + str(end_time) + "s\n")
 
 v = defaultdict(list)
 
@@ -13,9 +20,8 @@ for key, value in sorted(partition.items()):
     v[value].append(key)
 
 for key, value in v.items():
-	print(key)
-	print(value)
-	print()
+	f1.write(str(key) + "\n")
+	f1.write(str(value) + "\n\n")
 
 #drawing
 # size = float(len(set(partition.values())))

@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup
 from nltk.stem.snowball import SnowballStemmer
 from os import listdir
 from os.path import isfile, join
-from scipy.cluster.hierarchy import ward, dendrogram
+from scipy.cluster.hierarchy import ward, dendrogram, fcluster
 from sklearn import feature_extraction
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -18,10 +18,11 @@ import nltk
 import os
 import pandas as pd
 import re
+import time
 
 stopwords = nltk.corpus.stopwords.words('english')
 stemmer = SnowballStemmer("english")
-dirPath = 'Dataset1TuBes'
+dirPath = 'Dataset'
 
 # functions
 
@@ -91,14 +92,39 @@ terms = tfidf_vectorizer.get_feature_names()
 dist = 1 - cosine_similarity(tfidf_matrix)
 
 # Hierarchical Document Clustering
-
+start_time = time.time()
 linkage_matrix = ward(dist) #define the linkage_matrix using ward clustering pre-computed distances
+end_time = time.time()
+diff = end_time - start_time
+
+print("ward")
+print("Start time: " + str(start_time))
+print("End time: " + str(end_time))
+print("Diff: " + str(diff))
+
+start_time = time.time()
+ind = fcluster(linkage_matrix, 4, criterion = 'maxclust')
+end_time = time.time()
+diff = end_time - start_time
+
+print("\nfcluster")
+print("Start time: " + str(start_time))
+print("End time: " + str(end_time))
+print("Diff: " + str(diff))
+print("Time collapsed: " + str(diff) + "s")
+for arr in ind:
+    print(arr)
+
+# f1 = open('hierarchical result.txt', 'w')
+# f1.write("Time collapsed: " + str(end_time) + "s\n")
+# for arr in ind:
+    # print(str(arr)
 
 fig, ax = plt.subplots(figsize=(15, 20)) # set size
-ax = dendrogram(linkage_matrix, orientation="right", labels=files);
+ax = dendrogram(linkage_matrix, orientation = "right", labels = files);
 
 plt.tick_params(\
-    axis= 'x',          # changes apply to the x-axis
+    axis= 'x',         # changes apply to the x-axis
     which='both',      # both major and minor ticks are affected
     bottom='off',      # ticks along the bottom edge are off
     top='off',         # ticks along the top edge are off
@@ -107,4 +133,4 @@ plt.tick_params(\
 plt.tight_layout() #show plot with tight layout
 
 #uncomment below to save figure
-plt.savefig('ward_clusters.png', dpi=300) #save figure as ward_clusters
+plt.savefig('hierarchical result.png', dpi = 1000) #save figure as ward_clusters

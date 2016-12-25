@@ -1,10 +1,13 @@
+from collections import defaultdict
 from gensim import corpora, models
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import RegexpTokenizer
 from os import listdir
 from os.path import isfile, join
 from stop_words import get_stop_words
+
 import gensim
+import time
 
 tokenizer = RegexpTokenizer(r'\w+')
 
@@ -15,7 +18,7 @@ en_stop = get_stop_words('en')
 p_stemmer = PorterStemmer()
     
 # load documents
-dirPath = '12 Dataset @3'
+dirPath = 'Dataset'
 files = [f for f in listdir(dirPath) if isfile(join(dirPath, f))]
 
 fileContents = []
@@ -48,5 +51,31 @@ dictionary = corpora.Dictionary(texts)
 corpus = [dictionary.doc2bow(text) for text in texts]
 
 # generate LDA model
-ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = 2, id2word = dictionary, passes = 20)
-print(ldamodel.print_topics(num_topics = 2, num_words = 3))
+start_time = time.time()
+ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics = 4, id2word = dictionary, passes = 20)
+end_time = time.time() - start_time
+
+f1 = open('LDA result.txt', 'w')
+f1.write("Time collapsed: " + str(end_time) + "s\n")
+
+for i in ldamodel.show_topics():
+    f1.write("Cluster[" + str(i[0]) + "] words: ")
+    f1.write(str(i[1]) + " ")
+    f1.write("\n")
+	
+results = {}
+for i in range(len(files)):
+    for index, score in sorted(ldamodel[corpus[i]], key = lambda tup: -1 * tup[1]):
+        results[files[i]] = index
+        break
+
+v = defaultdict(list)
+
+for key, value in results.items():
+    v[value].append(key)
+
+for key, value in v.items():
+    f1.write("\n")
+    f1.write("Cluster[" + str(key) + "] documents: ")
+    f1.write(str(value) + " ")
+    f1.write("\n")
